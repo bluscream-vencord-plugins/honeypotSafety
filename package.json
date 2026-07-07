@@ -1,0 +1,19 @@
+{
+    "name": "honeypotSafety",
+    "version": "1.0.0",
+    "description": "Mark text channels as honeypots via right-click; disables the message input by spoofing missing send permissions.",
+    "main": "index.tsx",
+    "author": {
+        "name": "Bluscream",
+        "url": "https://github.com/Bluscream"
+    },
+    "license": "GPL-3.0-or-later",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/bluscream-vencord-plugins/honeypotSafety.git"
+    },
+    "vencord": {
+        "plugin": true,
+        "userPlugin": true
+    }
+}
