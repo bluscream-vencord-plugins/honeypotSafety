@@ -1,19 +1,26 @@
-//// Plugin originally written for Equicord at 2026-07-06 by https://github.com/Bluscream
+/*
+ * Vencord, a Discord client mod
+ * Copyright (c) 2026 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+// // Plugin originally written for Equicord at 2026-07-06 by https://github.com/Bluscream
 // region Imports
 import "./style.css";
 
 import { sendBotMessage } from "@api/Commands";
 import { NavContextMenuPatchCallback } from "@api/ContextMenu";
 import { addMessagePreSendListener, MessageSendListener, removeMessagePreSendListener } from "@api/MessageEvents";
+import { isPluginEnabled } from "@api/PluginManager";
+import { Settings } from "@api/Settings";
 import { Logger } from "@utils/Logger";
 import definePlugin from "@utils/types";
-import { Menu, PermissionsBits, PermissionStore, React, Toasts } from "@webpack/common";
 import { Channel } from "@vencord/discord-types";
+import { Menu, PermissionsBits, PermissionStore, React, showToast } from "@webpack/common";
 
-import { settings } from "./settings";
 // endregion Imports
-
 import { pluginInfo } from "./info";
+import { settings } from "./settings";
 export { pluginInfo };
 
 // region Variables
@@ -35,6 +42,10 @@ function getHoneypotSet(): Set<string> {
 
 function saveHoneypotSet(set: Set<string>) {
     settings.store.honeypotChannels = [...set].join(",");
+}
+
+function forkShowsBadge() {
+    return isPluginEnabled("ChannelBadges (Fork)") && Settings.plugins["ChannelBadges (Fork)"].showHoneypotBadge !== false;
 }
 
 function isHoneypot(channelId?: string | null): boolean {
@@ -62,13 +73,9 @@ function toggleHoneypot(channel: Channel) {
     logger.info(`${nowHoneypot ? "Marked" : "Unmarked"} channel ${channel.id} as honeypot`);
 
     if (settings.store.showToast) {
-        Toasts.show({
-            type: nowHoneypot ? Toasts.Type.FAILURE : Toasts.Type.SUCCESS,
-            message: nowHoneypot
+        showToast({ text: nowHoneypot
                 ? "🍯 Channel marked as honeypot - writing disabled"
-                : "Channel unmarked - writing enabled",
-            id: Toasts.genId()
-        });
+                : "Channel unmarked - writing enabled", variant: nowHoneypot ? "critical" : "success" });
     }
 }
 // "Eat" mode: let the user type and hit send, but swallow the message before it
@@ -159,10 +166,11 @@ export default definePlugin({
             ]
         },
         // --- Channel-list badge (optional, gated by the showBadge setting) ---
+        // Skipped when ChannelBadges (Fork) is enabled, which renders the honeypot badge itself.
         // Normal channels
         {
             find: "UNREAD_IMPORTANT:",
-            predicate: () => settings.store.showBadge,
+            predicate: () => settings.store.showBadge && !forkShowsBadge(),
             replacement: {
                 match: /\.Children\.count.+?:null(?<=,channel:(\i).+?)/,
                 replace: "$&,$self.renderHoneypotBadge($1)"
@@ -171,9 +179,9 @@ export default definePlugin({
         // Threads
         {
             find: "18V16H9v2H6Zm3",
-            predicate: () => settings.store.showBadge,
+            predicate: () => settings.store.showBadge && !forkShowsBadge(),
             replacement: {
-                match: /mentionsCount:\i.+?null(?<=channel:(\i).+?)/,
+                match: /\(0,\i\.jsx\)\(\i,\{thread:(\i),countInVoice:.{0,100}?\}\)/,
                 replace: "$&,$self.renderHoneypotBadge($1)"
             }
         }
